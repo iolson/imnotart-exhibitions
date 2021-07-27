@@ -9,18 +9,22 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     using SafeMath for uint256;
 
     // ---
-    // Constants
-    // ---
-    uint private constant _artistSecondarySalesBps = 500; // 5% of Secondary Sales (Cannot be changed)
-    uint private constant _imnotArtSecondarySalesBps = 250; // 2.5% of Secondary Sales (Cannot be changed)
-
-    // ---
     // Properties
     // ---
     uint256 private _nextTokenId = 1;
     address private _imnotArtPayoutAddress;
     address private _imnotArtMarketplaceContract;
     string private _contractUri;
+
+    // ---
+    // Structs
+    // ---
+    struct TokenBps {
+        uint16 artistFirstSaleBps;
+        uint16 artistSecondarySaleBps;
+        uint16 imnotArtFirstSaleBps;
+        uint16 imnotArtSecondarySaleBps;
+    }
 
     // ---
     // Events
@@ -47,6 +51,7 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // ---
     mapping(uint256 => string) private _metadataByTokenId;
     mapping(uint256 => address) private _artistByTokenId;
+    mapping(uint256 => TokenBps) private _tokenBpsByTokenId;
 
     // ---
     // Constructor
@@ -60,15 +65,31 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // ---
     // Minting
     // ---
-    function mintToken(address artistAddress, string memory metadataUri, bool transferToMarketplaceContract) public onlyAdmin returns (uint256 tokenId) {
+    function mintToken(
+        address artistAddress,
+        string memory metadataUri,
+        uint16 artistFirstSaleBps, 
+        uint16 artistSecondarySaleBps, 
+        uint16 imnotArtFirstSaleBps, 
+        uint16 imnotArtSecondarySaleBps, 
+        bool transferToMarketplaceContract
+        ) public onlyAdmin returns (uint256 tokenId) {
         tokenId = _nextTokenId;
         _nextTokenId = _nextTokenId.add(1);
 
         _mint(artistAddress, tokenId);
         _artistByTokenId[tokenId] = artistAddress;
-        _metadataByTokenId[tokenId] = metadataUri;
 
+        _metadataByTokenId[tokenId] = metadataUri;
         emit PermanentURI(metadataUri, tokenId);
+
+        TokenBps memory tokenBps = TokenBps({
+            artistFirstSaleBps: artistFirstSaleBps,
+            artistSecondarySaleBps: artistSecondarySaleBps,
+            imnotArtFirstSaleBps: imnotArtFirstSaleBps,
+            imnotArtSecondarySaleBps: imnotArtSecondarySaleBps
+        });
+        _tokenBpsByTokenId[tokenId] = tokenBps;
 
         if (transferToMarketplaceContract) {
             // @TODO(iolson): Transfer to the Marketplace Contract to put up for auction?

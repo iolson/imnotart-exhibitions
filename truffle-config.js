@@ -34,5 +34,13 @@ module.exports = {
                 evmVersion: "byzantium"
             }
         }
-    }
+    },
+
+    db: {
+        enabled: false
+    },
+
+    plugins: [
+        'truffle-contract-size'
+    ]
 };
