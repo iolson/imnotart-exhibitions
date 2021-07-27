@@ -1,0 +1,9 @@
+{
+    "name": "imnotArt Exhibitions Contract",
+    "version": "0.1.0",
+    "description": "imnotArt Exhibitions Contract written in Solidity for the Ethereum Blockchain",
+    "author": "ianmolson@gmail.com",
+    "dependencies": {
+        "@openzeppelin/contracts": "^4.2.0"
+    }
+}
