@@ -11,7 +11,7 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // ---
     // Properties
     // ---
-    uint256 private _nextTokenId = 1;
+    uint256 public nextTokenId = 1;
     address private _imnotArtPayoutAddress;
     address private _imnotArtMarketplaceContract;
     string private _contractUri;
@@ -19,11 +19,11 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // ---
     // Structs
     // ---
+
+    /* Only need Artist BPS, as remainder would be given to imnotArt after Artist is paid */
     struct TokenBps {
         uint16 artistFirstSaleBps;
         uint16 artistSecondarySaleBps;
-        uint16 imnotArtFirstSaleBps;
-        uint16 imnotArtSecondarySaleBps;
     }
 
     // ---
@@ -65,17 +65,9 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // ---
     // Minting
     // ---
-    function mintToken(
-        address artistAddress,
-        string memory metadataUri,
-        uint16 artistFirstSaleBps, 
-        uint16 artistSecondarySaleBps, 
-        uint16 imnotArtFirstSaleBps, 
-        uint16 imnotArtSecondarySaleBps, 
-        bool transferToMarketplaceContract
-        ) public onlyAdmin returns (uint256 tokenId) {
-        tokenId = _nextTokenId;
-        _nextTokenId = _nextTokenId.add(1);
+    function mintToken(address artistAddress, string memory metadataUri, uint16 artistFirstSaleBps, uint16 artistSecondarySaleBps, bool transferToMarketplaceContract) public onlyAdmin returns (uint256 tokenId) {
+        tokenId = nextTokenId;
+        nextTokenId = nextTokenId.add(1);
 
         _mint(artistAddress, tokenId);
         _artistByTokenId[tokenId] = artistAddress;
@@ -85,9 +77,7 @@ contract ImnotArtExhibitions is ERC721Enumerable {
 
         TokenBps memory tokenBps = TokenBps({
             artistFirstSaleBps: artistFirstSaleBps,
-            artistSecondarySaleBps: artistSecondarySaleBps,
-            imnotArtFirstSaleBps: imnotArtFirstSaleBps,
-            imnotArtSecondarySaleBps: imnotArtSecondarySaleBps
+            artistSecondarySaleBps: artistSecondarySaleBps
         });
         _tokenBpsByTokenId[tokenId] = tokenBps;
 
@@ -103,12 +93,26 @@ contract ImnotArtExhibitions is ERC721Enumerable {
         _imnotArtPayoutAddress = newPayoutAddress;
     }
 
+    function updateContractUri(string memory newContractUri) public onlyAdmin {
+        _contractUri = newContractUri;
+    }
+
+    function addAdmin(address newAdminAddress) public onlyAdmin {
+        _isAdmin[newAdminAddress] = true;
+    }
+
     // ---
     // Metadata
     // ---
     function tokenURI(uint256 tokenId) public view override virtual returns (string memory) {
         return _metadataByTokenId[tokenId];
     }
+
+    // ---
+    // Contract Retrieve Functions
+    // ---
+
+    // @TODO(iolson): Get Tokens of Owner
 
     // ---
     // Secondary Marketplace Functions
