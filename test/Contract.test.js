@@ -34,14 +34,32 @@ contract('Contract', (accounts) => {
 
         it('non-admin fails updates', async () => {
             await truffleAssert.fails(
-                contract.addAdmin(accounts[1], {from: imnotArtAddress}),
+                contract.addAdmin(imnotArtAddress, {from: imnotArtAddress}),
                 truffleAssert.ErrorType.REVERT,
                 'Only admins.'
             )
         })
 
         it('can add a new admin', async () => {
-            
+            await truffleAssert.passes(
+                contract.addAdmin(imnotArtAddress)
+            )
+        })
+
+        it('new admin can add another admin', async () => {
+            await truffleAssert.passes(
+                contract.addAdmin(accounts[2], {from: imnotArtAddress})
+            )
+        })
+
+        it('can update contract uri', async () => {
+            let contractUri = await contract.contractURI()
+            assert.equal(contractUri, '')
+
+            await contract.updateContractUri('contract-uri')
+
+            contractUri = await contract.contractURI()
+            assert.equal(contractUri, 'contract-uri')
         })
     })
 
@@ -55,6 +73,9 @@ contract('Contract', (accounts) => {
 
             truffleAssert.eventEmitted(mintTransaction, 'Transfer', {to: artistOneAddress, tokenId: nextTokenId})
             truffleAssert.eventEmitted(mintTransaction, 'PermanentURI', {_value: metadataUri, _id: nextTokenId})
+
+            let tokenUri = await contract.tokenURI(nextTokenId)
+            assert.equal(tokenUri, 'metadata-uri-test')
 
             nextTokenId = await contract.nextTokenId()
             assert.equal(nextTokenId.toString(), web3.utils.toBN(2).toString())
@@ -74,6 +95,6 @@ contract('Contract', (accounts) => {
     })
 
     describe('getting data', async () => {
-
+        
     })
 })

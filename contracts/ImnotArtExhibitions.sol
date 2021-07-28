@@ -122,4 +122,6 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     function contractURI() public view virtual returns (string memory) {
         return _contractUri;
     }
+
+    /* Rarible */
 }
