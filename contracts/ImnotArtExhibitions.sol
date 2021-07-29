@@ -12,13 +12,19 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // Properties
     // ---
     uint256 public nextTokenId = 1;
-    address private _imnotArtPayoutAddress;
-    address private _imnotArtMarketplaceContract;
+    address public imnotArtPayoutAddress;
+    address public marketplaceAddress;
     string private _contractUri;
 
     // ---
     // Structs
     // ---
+
+    /* Interface for Rarible that can be used for other things in future */
+    struct RoyaltyBps {
+        address payable account;
+        uint96 value;
+    }
 
     /* Only need Artist BPS, as remainder would be given to imnotArt after Artist is paid */
     struct TokenBps {
@@ -50,15 +56,15 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // Mappings
     // ---
     mapping(uint256 => string) private _metadataByTokenId;
-    mapping(uint256 => address) private _artistByTokenId;
-    mapping(uint256 => TokenBps) private _tokenBpsByTokenId;
+    mapping(uint256 => address) public artistByTokenId;
+    mapping(uint256 => TokenBps) public tokenBpsByTokenId;
+    mapping(uint256 => RoyaltyBps) public royaltyBpsByTokenId;
 
     // ---
     // Constructor
     // ---
     constructor() ERC721("imnotArt Exhibitions", "IMNOTART") {
         _isAdmin[msg.sender] = true;
-        // @TODO(iolson): Set admin(s)
         // @TODO(iolson): Set initial Contract URI
     }
 
@@ -70,7 +76,7 @@ contract ImnotArtExhibitions is ERC721Enumerable {
         nextTokenId = nextTokenId.add(1);
 
         _mint(artistAddress, tokenId);
-        _artistByTokenId[tokenId] = artistAddress;
+        artistByTokenId[tokenId] = artistAddress;
 
         _metadataByTokenId[tokenId] = metadataUri;
         emit PermanentURI(metadataUri, tokenId);
@@ -79,10 +85,16 @@ contract ImnotArtExhibitions is ERC721Enumerable {
             artistFirstSaleBps: artistFirstSaleBps,
             artistSecondarySaleBps: artistSecondarySaleBps
         });
-        _tokenBpsByTokenId[tokenId] = tokenBps;
+        tokenBpsByTokenId[tokenId] = tokenBps;
+
+        RoyaltyBps memory royaltyBps = RoyaltyBps({
+            account: payable(artistAddress),
+            value: artistSecondarySaleBps
+        });
+        royaltyBpsByTokenId[tokenId] = royaltyBps;
 
         if (transferToMarketplaceContract) {
-            // @TODO(iolson): Transfer to the Marketplace Contract to put up for auction?
+            _transfer(artistAddress, marketplaceAddress, tokenId);
         }
     }
 
@@ -90,7 +102,11 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // Contract Updates
     // ---
     function updateImnotArtPayoutAddress(address newPayoutAddress) public onlyAdmin {
-        _imnotArtPayoutAddress = newPayoutAddress;
+        imnotArtPayoutAddress = newPayoutAddress;
+    }
+
+    function updateMarketplaceAddress(address newMarketplaceAddress) public onlyAdmin {
+        marketplaceAddress = newMarketplaceAddress;
     }
 
     function updateContractUri(string memory newContractUri) public onlyAdmin {
@@ -111,8 +127,21 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // ---
     // Contract Retrieve Functions
     // ---
+    function getTokensOfOwner(address owner) public view returns (uint256[] memory tokenIds) {
+        uint256 tokenCount = balanceOf(owner);
 
-    // @TODO(iolson): Get Tokens of Owner
+        if (tokenCount == 0) {
+            tokenIds = new uint256[](0);
+        } else {
+            tokenIds = new uint256[](tokenCount);
+            uint256 index;
+            for (index = 0; index < tokenCount; index++) {
+                tokenIds[index] = tokenOfOwnerByIndex(owner, index);
+            }
+        }
+
+        return tokenIds;
+    }
 
     // ---
     // Secondary Marketplace Functions
@@ -122,6 +151,20 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     function contractURI() public view virtual returns (string memory) {
         return _contractUri;
     }
-
+    
     /* Rarible */
+    function getRoyalties(uint256 id) external view returns (RoyaltyBps[] memory) {
+        RoyaltyBps[] memory royalties = new RoyaltyBps[](2);
+
+        // Add Artist Royalties
+        royalties[0] = royaltyBpsByTokenId[id];
+
+        // Add imnotArt Royalties
+        royalties[1] = RoyaltyBps({
+            account: payable(imnotArtPayoutAddress),
+            value: 250
+        });
+
+        return royalties;
+    }
 }
