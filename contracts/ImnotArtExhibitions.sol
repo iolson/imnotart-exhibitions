@@ -9,6 +9,13 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     using SafeMath for uint256;
 
     // ---
+    // Constants
+    // ---
+    uint16 constant public artistFirstSaleBps = 6500; // 65% of First Sale
+    uint16 constant public artistSecondarySaleBps = 500; // 5% of Secondary Sale
+    uint16 constant public imnotArtSecondarySaleBps = 250; // 2.5% of Secondary Sale
+
+    // ---
     // Properties
     // ---
     uint256 public nextTokenId = 1;
@@ -19,12 +26,6 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // ---
     // Structs
     // ---
-
-    /* Interface for Rarible that can be used for other things in future */
-    struct RoyaltyBps {
-        address payable account;
-        uint96 value;
-    }
 
     /* Only need Artist BPS, as remainder would be given to imnotArt after Artist is paid */
     struct TokenBps {
@@ -41,9 +42,15 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // Security
     // ---
     mapping(address => bool) private _isAdmin;
+    mapping(address => bool) private _isArtist;
 
     modifier onlyAdmin() {
         require(_isAdmin[msg.sender], "Only admins.");
+        _;
+    }
+
+    modifier onlyArtist() {
+        require(_isArtist[msg.sender], "Only approved artists.");
         _;
     }
 
@@ -58,7 +65,6 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     mapping(uint256 => string) private _metadataByTokenId;
     mapping(uint256 => address) public artistByTokenId;
     mapping(uint256 => TokenBps) public tokenBpsByTokenId;
-    mapping(uint256 => RoyaltyBps) public royaltyBpsByTokenId;
 
     // ---
     // Constructor
@@ -71,7 +77,7 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // ---
     // Minting
     // ---
-    function mintToken(address artistAddress, string memory metadataUri, uint16 artistFirstSaleBps, uint16 artistSecondarySaleBps, bool transferToMarketplaceContract) public onlyAdmin returns (uint256 tokenId) {
+    function mintToken(address artistAddress, string memory metadataUri, bool transferToMarketplaceContract) public onlyAdmin returns (uint256 tokenId) {
         tokenId = nextTokenId;
         nextTokenId = nextTokenId.add(1);
 
@@ -87,15 +93,39 @@ contract ImnotArtExhibitions is ERC721Enumerable {
         });
         tokenBpsByTokenId[tokenId] = tokenBps;
 
-        RoyaltyBps memory royaltyBps = RoyaltyBps({
-            account: payable(artistAddress),
-            value: artistSecondarySaleBps
-        });
-        royaltyBpsByTokenId[tokenId] = royaltyBps;
-
         if (transferToMarketplaceContract) {
             _transfer(artistAddress, marketplaceAddress, tokenId);
         }
+    }
+
+    function artistMintToken(string memory metadataUri, bool transferToMarketplaceContract) public onlyArtist returns (uint256 tokenId) {
+        tokenId = nextTokenId;
+        nextTokenId = nextTokenId.add(1);
+
+        _mint(msg.sender, tokenId);
+        artistByTokenId[tokenId] = msg.sender;
+
+        _metadataByTokenId[tokenId] = metadataUri;
+        emit PermanentURI(metadataUri, tokenId);
+
+        TokenBps memory tokenBps = TokenBps({
+            artistFirstSaleBps: artistFirstSaleBps,
+            artistSecondarySaleBps: artistSecondarySaleBps
+        });
+        tokenBpsByTokenId[tokenId] = tokenBps;
+
+        if (transferToMarketplaceContract) {
+            _transfer(msg.sender, marketplaceAddress, tokenId);
+        }
+    }
+
+    // ---
+    // Burning
+    // ---
+    function burn(uint256 tokenId) public virtual {
+        //solhint-disable-next-line max-line-length
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "Caller is not owner nor approved");
+        _burn(tokenId);
     }
 
     // ---
@@ -117,10 +147,22 @@ contract ImnotArtExhibitions is ERC721Enumerable {
         _isAdmin[newAdminAddress] = true;
     }
 
+    function removeAdmin(address removeAdminAddress) public onlyAdmin {
+        _isAdmin[removeAdminAddress] = true;
+    }
+
+    function addApprovedArtist(address newArtistAddress) public onlyAdmin {
+        _isArtist[newArtistAddress] = true;
+    }
+
+    function removeApprovedArtist(address removeArtistAddress) public onlyAdmin {
+        _isArtist[removeArtistAddress] = false;
+    }
+
     // ---
     // Metadata
     // ---
-    function tokenURI(uint256 tokenId) public view override virtual returns (string memory) {
+    function tokenURI(uint256 tokenId) public view override virtual onlyValidTokenId(tokenId) returns (string memory) {
         return _metadataByTokenId[tokenId];
     }
 
@@ -153,18 +195,17 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     }
     
     /* Rarible */
-    function getRoyalties(uint256 id) external view returns (RoyaltyBps[] memory) {
-        RoyaltyBps[] memory royalties = new RoyaltyBps[](2);
+    function getFeeRecipients(uint256 tokenId) public view onlyValidTokenId(tokenId) returns (address payable[] memory) {
+        address payable[] memory recipients = new address payable[](2);
+        recipients[0] = payable(artistByTokenId[tokenId]);
+        recipients[1] = payable(imnotArtPayoutAddress);
+        return recipients;
+    }
 
-        // Add Artist Royalties
-        royalties[0] = royaltyBpsByTokenId[id];
-
-        // Add imnotArt Royalties
-        royalties[1] = RoyaltyBps({
-            account: payable(imnotArtPayoutAddress),
-            value: 250
-        });
-
-        return royalties;
+    function getFeeBps(uint256 tokenId) public view onlyValidTokenId(tokenId) returns (uint[] memory) {
+        uint256[] memory feeBps = new uint[](2);
+        feeBps[0] = uint(artistSecondarySaleBps);
+        feeBps[1] = uint(imnotArtSecondarySaleBps);
+        return feeBps;
     }
 }

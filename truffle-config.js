@@ -2,6 +2,7 @@ const HDWalletProvider = require('truffle-hdwallet-provider');
 const fs = require('fs');
 const infuraKey = fs.readFileSync(".infura").toString().trim();
 const mnemonic = fs.readFileSync(".secret").toString().trim();
+const etherscanKey = fs.readFileSync(".etherscan").toString().trim();
 
 module.exports = {
     networks: {
@@ -15,9 +16,8 @@ module.exports = {
         rinkeby: {
             provider: function () {
                 return new HDWalletProvider(mnemonic,
-                    "https://rinkeby.infura.io/v3/" + infuraKey)
+                    "https://rinkeby.infura.io/v3/" + infuraKey, 3)
             },
-            from: 0xC16f1eDAbfAEa8981F2Ba8D61401f7a76B1fDa50,
             network_id: 4,
             gas: 4500000,
             gasPrice: 10000000000,
@@ -42,6 +42,11 @@ module.exports = {
     },
 
     plugins: [
-        'truffle-contract-size'
-    ]
+        'truffle-contract-size',
+        'truffle-plugin-verify'
+    ],
+
+    api_keys: {
+        etherscan: etherscanKey
+    }
 };
