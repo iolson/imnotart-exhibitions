@@ -183,7 +183,27 @@ contract('Contract', (accounts) => {
         })
 
         it('can mint as approved artist and transfer to marketplace', async () => {
-            // @TODO(iolson): Write Test
+            const artistBeforeMintTokenIds = await contract.getTokensOfOwner(artistOneAddress)
+            assert.equal(artistBeforeMintTokenIds.length, 2)
+
+            let metadataUri = 'metadata-uri-test'
+            let nextTokenId = await contract.nextTokenId()
+
+            const mintTransaction = await contract.artistMintToken(metadataUri, true, {from: artistOneAddress})
+
+            truffleAssert.eventEmitted(mintTransaction, 'Transfer', {to: artistOneAddress, tokenId: nextTokenId})
+            truffleAssert.eventEmitted(mintTransaction, 'PermanentURI', {_value: metadataUri, _id: nextTokenId})
+            truffleAssert.eventEmitted(mintTransaction, 'Approval', {owner: artistOneAddress, tokenId: nextTokenId})
+            truffleAssert.eventEmitted(mintTransaction, 'Transfer', {from: artistOneAddress, to: marketplaceAddress, tokenId: nextTokenId})
+
+            let tokenUri = await contract.tokenURI(nextTokenId)
+            assert.equal(tokenUri, 'metadata-uri-test')
+
+            nextTokenId = await contract.nextTokenId()
+            assert.equal(nextTokenId.toString(), web3.utils.toBN(5).toString())
+
+            const afterMintTokenIds = await contract.getTokensOfOwner(artistOneAddress)
+            assert.equal(afterMintTokenIds.length, 2)
         })
 
         it('non-admin fails minting', async () => {
