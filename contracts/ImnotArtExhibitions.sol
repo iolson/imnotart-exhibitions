@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 contract ImnotArtExhibitions is ERC721Enumerable {
     using SafeMath for uint256;
 
+    // @TODO(iolson): EIP 2981
+
     // ---
     // Constants
     // ---
@@ -122,9 +124,9 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // ---
     // Burning
     // ---
-    function burn(uint256 tokenId) public virtual {
+    function burn(uint256 tokenId) public virtual onlyArtist {
         //solhint-disable-next-line max-line-length
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "Caller is not owner nor approved");
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "Only approved artist owners.");
         _burn(tokenId);
     }
 
@@ -194,7 +196,7 @@ contract ImnotArtExhibitions is ERC721Enumerable {
         return _contractUri;
     }
     
-    /* Rarible */
+    /* Rarible Royalties V1 */
     function getFeeRecipients(uint256 tokenId) public view onlyValidTokenId(tokenId) returns (address payable[] memory) {
         address payable[] memory recipients = new address payable[](2);
         recipients[0] = payable(artistByTokenId[tokenId]);

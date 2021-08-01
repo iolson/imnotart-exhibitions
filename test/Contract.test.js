@@ -54,7 +54,9 @@ contract('Contract', (accounts) => {
         })
 
         it('can remove an admin', async () => {
-            // @TODO(iolson): Write Test
+            await truffleAssert.passes(
+                contract.removeAdmin(imnotArtPayoutAddress, {from: imnotArtAdminAddress})
+            )
         })
 
         it('can update contract uri', async () => {
@@ -203,15 +205,38 @@ contract('Contract', (accounts) => {
 
     describe('burning', async () => {
         it('an approved artist can burn token if they own it', async () => {
-            // @TODO(iolson): Write tests
+            const artistBeforeMintTokenIds = await contract.getTokensOfOwner(artistOneAddress)
+            assert.equal(artistBeforeMintTokenIds.length, 2)
+
+            const burnTransaction = await contract.burn(3, {from: artistOneAddress})
+
+            truffleAssert.eventEmitted(burnTransaction, 'Approval', {owner: artistOneAddress, tokenId: web3.utils.toBN(3)})
+            truffleAssert.eventEmitted(burnTransaction, 'Transfer', {from: artistOneAddress, tokenId: web3.utils.toBN(3)})
+
+            const afterMintTokenIds = await contract.getTokensOfOwner(artistOneAddress)
+            assert.equal(afterMintTokenIds.length, 1)
+
+            await truffleAssert.fails(
+                contract.tokenURI('3'),
+                truffleAssert.ErrorType.REVERT,
+                'Token ID does not exist.'
+            )
         })
 
         it('an approved artist cant burn token if they dont own it', async () => {
-            // @TODO(iolson): Write tests
+            await truffleAssert.fails(
+                contract.burn(2, {from: artistOneAddress}),
+                truffleAssert.ErrorType.REVERT,
+                'Only approved artist owners.'
+            )
         })
 
         it('non-artist cant burn token', async () => {
-            // @TODO(iolson): Write tests
+            await truffleAssert.fails(
+                contract.burn(1, {from: accounts[7]}),
+                truffleAssert.ErrorType.REVERT,
+                'Only approved artists.'
+            )
         })
     })
 
