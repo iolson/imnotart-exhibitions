@@ -8,11 +8,13 @@ require('chai')
     .should()
 
 contract('Contract', (accounts) => {
-    const imnotArtAdminAddress = accounts[1];
-    const imnotArtPayoutAddress = accounts[2];
-    const artistOneAddress = accounts[5];
-    const artistTwoAddress = accounts[6];
-    const marketplaceAddress = accounts[9];
+    const imnotArtAdminAddress = accounts[1]
+    const imnotArtPayoutAddress = accounts[2]
+    const artistOneAddress = accounts[5]
+    const artistTwoAddress = accounts[6]
+    const artistThreeAddress = accounts[7]
+    const artistOneRoyaltyContractAddress = accounts[8]
+    const marketplaceAddress = accounts[9]
 
     let contract;
 
@@ -103,6 +105,24 @@ contract('Contract', (accounts) => {
             await truffleAssert.passes(
                 contract.removeApprovedArtist(artistTwoAddress, {from: imnotArtAdminAddress})
             )
+        })
+
+        it('can add a royalty contract address for artist', async () => {
+            await truffleAssert.passes(
+                contract.addRoyaltyContractAddress(artistOneAddress, artistOneRoyaltyContractAddress)
+            )
+        })
+
+        it('can toggle using royalty contract addresses', async () => {
+            const beforeToggle = await contract.useRoyaltyContracts()
+            assert.isFalse(beforeToggle)
+
+            await truffleAssert.passes(
+                contract.toggleUseRoyaltyContracts()
+            )
+
+            const afterToggle = await contract.useRoyaltyContracts()
+            assert.isTrue(afterToggle);
         })
     })
 
@@ -262,22 +282,49 @@ contract('Contract', (accounts) => {
 
     describe('getting data', async () => {
 
-        it('rariable can get royalties', async () => {
-            const recipients = await contract.getFeeRecipients('1')
-            assert.equal(recipients[0], artistOneAddress)
-            assert.equal(recipients[1], imnotArtPayoutAddress)
-
-            const bps = await contract.getFeeBps('1')
-            assert.equal(bps[0], 500)
-            assert.equal(bps[1], 250)
-        })
-
         it('invalid token token uri', async () => {
             truffleAssert.fails(
                 contract.tokenURI(0),
                 truffleAssert.ErrorType.REVERT,
                 'Token ID does not exist.'
             )
+        })
+    })
+
+    describe('rarible royalties', async () => {
+
+        it('rariable can get royalties', async () => {
+            const royalties = await contract.getRaribleV2Royalties('1')
+            assert.equal(royalties[0].account, artistOneAddress)
+            assert.equal(royalties[0].value, 500)
+            assert.equal(royalties[1].account, imnotArtPayoutAddress)
+            assert.equal(royalties[1].value, 250)
+        })
+    })
+
+    describe('EIP-2981 royalty', async () => {
+
+        it('royalty info - no royalty contract on file', async () => {
+            await contract.mintToken(artistThreeAddress, 'metadata', false)
+            const royaltyInfo = await contract.royaltyInfo('5', web3.utils.toWei('5.2', 'ether'))
+            assert.equal(royaltyInfo.receiver, imnotArtPayoutAddress)
+            assert.equal(royaltyInfo.amount.toString(), web3.utils.toBN(web3.utils.toWei('0.39', 'ether')).toString())
+        })
+
+        it('royalty info - royalty contract on file', async () => {
+            const royaltyInfo = await contract.royaltyInfo('1', web3.utils.toWei('5.2', 'ether'))
+            assert.equal(royaltyInfo.receiver, artistOneRoyaltyContractAddress)
+            assert.equal(royaltyInfo.amount.toString(), web3.utils.toBN(web3.utils.toWei('0.39', 'ether')).toString())
+        })
+
+        it('royalty info - royalty contracts: false - imnotArt fallback', async () => {
+            await truffleAssert.passes(
+                contract.toggleUseRoyaltyContracts()
+            )
+
+            const royaltyInfo = await contract.royaltyInfo('1', web3.utils.toWei('5.2', 'ether'))
+            assert.equal(royaltyInfo.receiver, imnotArtPayoutAddress)
+            assert.equal(royaltyInfo.amount.toString(), web3.utils.toBN(web3.utils.toWei('0.39', 'ether')).toString())
         })
     })
 })

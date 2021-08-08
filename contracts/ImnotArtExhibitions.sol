@@ -1,18 +1,36 @@
 // SPDX-License-Identifier: MIT
 
+/*
+  _                       _                 _     ______      _     _ _     _ _   _                 
+ (_)                     | |     /\        | |   |  ____|    | |   (_) |   (_) | (_)                
+  _ _ __ ___  _ __   ___ | |_   /  \   _ __| |_  | |__  __  _| |__  _| |__  _| |_ _  ___  _ __  ___ 
+ | | '_ ` _ \| '_ \ / _ \| __| / /\ \ | '__| __| |  __| \ \/ / '_ \| | '_ \| | __| |/ _ \| '_ \/ __|
+ | | | | | | | | | | (_) | |_ / ____ \| |  | |_  | |____ >  <| | | | | |_) | | |_| | (_) | | | \__ \
+ |_|_| |_| |_|_| |_|\___/ \__/_/    \_\_|   \__| |______/_/\_\_| |_|_|_.__/|_|\__|_|\___/|_| |_|___/
+                                                                                                    
+ Written by Ian Olson
+*/
+
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "./rarible/library/LibPart.sol";
+import "./rarible/library/LibRoyaltiesV2.sol";
+import "./rarible/RoyaltiesV2.sol";
 
-contract ImnotArtExhibitions is ERC721Enumerable {
+contract ImnotArtExhibitions is Ownable, ERC721Enumerable, RoyaltiesV2 {
     using SafeMath for uint256;
-
-    // @TODO(iolson): EIP 2981
 
     // ---
     // Constants
     // ---
+    bytes4 private constant _INTERFACE_ID_ERC165 = 0x01ffc9a7;
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+    bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
+    bytes4 private constant _INTERFACE_ID_ERC721_ENUMERABLE = 0x780e9d63;
+    bytes4 private constant _INTERFACE_ID_EIP2981 = 0x2a55205a;
     uint16 constant public artistFirstSaleBps = 6500; // 65% of First Sale
     uint16 constant public artistSecondarySaleBps = 500; // 5% of Secondary Sale
     uint16 constant public imnotArtSecondarySaleBps = 250; // 2.5% of Secondary Sale
@@ -24,6 +42,7 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     address public imnotArtPayoutAddress;
     address public marketplaceAddress;
     string private _contractUri;
+    bool public useRoyaltyContracts;
 
     // ---
     // Structs
@@ -39,6 +58,7 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // Events
     // ---
     event PermanentURI(string _value, uint256 indexed _id); // OpenSea Freezing Metadata
+    event Debug(string _value, address royaltyAddress);
 
     // ---
     // Security
@@ -67,13 +87,29 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     mapping(uint256 => string) private _metadataByTokenId;
     mapping(uint256 => address) public artistByTokenId;
     mapping(uint256 => TokenBps) public tokenBpsByTokenId;
+    mapping(address => address) public royaltyContractByArtistAddress;
 
     // ---
     // Constructor
     // ---
     constructor() ERC721("imnotArt Exhibitions", "IMNOTART") {
         _isAdmin[msg.sender] = true;
-        // @TODO(iolson): Set initial Contract URI
+        useRoyaltyContracts = false;
+        // imnotArtPayoutAddress = 0xaB5B4e5845B124785027d9944baaFb7f064B3F72; // @TODO(iolson): Proper Production Payout Address
+        // _contractUri = "ipfs://bafkreigrkm4ta353qumma6g6fpfg7mbnhyuyckdy2hi6udc5ov5asjcsiu"; // @TODO(iolson): Proper Production Contract URI
+    }
+
+    // ---
+    // Supported Interfaces
+    // ---
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == _INTERFACE_ID_ERC165
+        || interfaceId == LibRoyaltiesV2._INTERFACE_ID_ROYALTIES
+        || interfaceId == _INTERFACE_ID_ERC721
+        || interfaceId == _INTERFACE_ID_ERC721_METADATA
+        || interfaceId == _INTERFACE_ID_ERC721_ENUMERABLE
+        || interfaceId == _INTERFACE_ID_EIP2981
+        || super.supportsInterface(interfaceId);
     }
 
     // ---
@@ -161,6 +197,14 @@ contract ImnotArtExhibitions is ERC721Enumerable {
         _isArtist[removeArtistAddress] = false;
     }
 
+    function toggleUseRoyaltyContracts() public onlyAdmin {
+        useRoyaltyContracts = !useRoyaltyContracts;
+    }
+
+    function addRoyaltyContractAddress(address artistAddress, address royaltyContractAddress) public onlyAdmin {
+        royaltyContractByArtistAddress[artistAddress] = royaltyContractAddress;
+    }
+
     // ---
     // Metadata
     // ---
@@ -171,8 +215,8 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     // ---
     // Contract Retrieve Functions
     // ---
-    function getTokensOfOwner(address owner) public view returns (uint256[] memory tokenIds) {
-        uint256 tokenCount = balanceOf(owner);
+    function getTokensOfOwner(address _owner) public view returns (uint256[] memory tokenIds) {
+        uint256 tokenCount = balanceOf(_owner);
 
         if (tokenCount == 0) {
             tokenIds = new uint256[](0);
@@ -180,7 +224,7 @@ contract ImnotArtExhibitions is ERC721Enumerable {
             tokenIds = new uint256[](tokenCount);
             uint256 index;
             for (index = 0; index < tokenCount; index++) {
-                tokenIds[index] = tokenOfOwnerByIndex(owner, index);
+                tokenIds[index] = tokenOfOwnerByIndex(_owner, index);
             }
         }
 
@@ -195,19 +239,40 @@ contract ImnotArtExhibitions is ERC721Enumerable {
     function contractURI() public view virtual returns (string memory) {
         return _contractUri;
     }
-    
-    /* Rarible Royalties V1 */
-    function getFeeRecipients(uint256 tokenId) public view onlyValidTokenId(tokenId) returns (address payable[] memory) {
-        address payable[] memory recipients = new address payable[](2);
-        recipients[0] = payable(artistByTokenId[tokenId]);
-        recipients[1] = payable(imnotArtPayoutAddress);
-        return recipients;
+
+    /* Rarible Royalties V2 */
+    function getRaribleV2Royalties(uint256 tokenId) external view override onlyValidTokenId(tokenId) returns (LibPart.Part[] memory) {
+        LibPart.Part[] memory royalties = new LibPart.Part[](2);
+        
+        royalties[0] = LibPart.Part({
+            account: payable(artistByTokenId[tokenId]),
+            value: uint96(artistSecondarySaleBps)
+        });
+
+        royalties[1] = LibPart.Part({
+            account: payable(imnotArtPayoutAddress),
+            value: uint96(imnotArtSecondarySaleBps)
+        });
+
+        return royalties;
     }
 
-    function getFeeBps(uint256 tokenId) public view onlyValidTokenId(tokenId) returns (uint[] memory) {
-        uint256[] memory feeBps = new uint[](2);
-        feeBps[0] = uint(artistSecondarySaleBps);
-        feeBps[1] = uint(imnotArtSecondarySaleBps);
-        return feeBps;
+    /* EIP-2981 - https://eips.ethereum.org/EIPS/eip-2981 */
+    function royaltyInfo(uint256 tokenId, uint256 salePrice) external view onlyValidTokenId(tokenId) returns (address receiver, uint256 amount) {
+        address artistAddress = artistByTokenId[tokenId];
+        uint256 combinedBpsForSinglePayout = uint256(artistSecondarySaleBps).add(uint256(imnotArtSecondarySaleBps));
+        uint256 royaltyAmount = SafeMath.div(SafeMath.mul(salePrice, combinedBpsForSinglePayout), 10000);
+
+        address payoutAddress = imnotArtPayoutAddress;
+        
+        if (useRoyaltyContracts) {
+            payoutAddress = royaltyContractByArtistAddress[artistAddress];
+        }
+
+        if (payoutAddress == address(0)) {
+            payoutAddress = imnotArtPayoutAddress;
+        }
+
+        return (payoutAddress, royaltyAmount);
     }
 }
