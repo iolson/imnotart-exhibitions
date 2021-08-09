@@ -181,6 +181,14 @@ contract ImnotArtExhibitions is Ownable, ERC721Enumerable, RoyaltiesV2 {
         _contractUri = newContractUri;
     }
 
+    function updateTokenMetadata(uint256 tokenId, string memory metadataUri, bool permanent) public onlyOwner onlyValidTokenId(tokenId) {
+        _metadataByTokenId[tokenId] = metadataUri;
+
+        if (permanent) {
+            emit PermanentURI(metadataUri, tokenId);
+        }
+    }
+
     function addAdmin(address newAdminAddress) public onlyAdmin {
         _isAdmin[newAdminAddress] = true;
     }

@@ -241,6 +241,22 @@ contract('Contract', (accounts) => {
                 'Only approved artists.'
             )
         })
+
+        it('can update token metadata', async () => {
+            await truffleAssert.passes(
+                contract.updateTokenMetadata('1', 'update', false)
+            )
+
+            let tokenUri = await contract.tokenURI('1')
+            assert.equal(tokenUri, 'update')
+
+            const updateMetadataWithEvent = await contract.updateTokenMetadata('1', 'update2', true)
+
+            truffleAssert.eventEmitted(updateMetadataWithEvent, 'PermanentURI', {_value: 'update2', _id: web3.utils.toBN(1)})
+            
+            tokenUri = await contract.tokenURI('1')
+            assert.equal(tokenUri, 'update2')
+        })
     })
 
     describe('burning', async () => {
