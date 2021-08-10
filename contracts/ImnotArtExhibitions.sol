@@ -40,7 +40,6 @@ contract ImnotArtExhibitions is Ownable, ERC721Enumerable, RoyaltiesV2 {
     // ---
     uint256 public nextTokenId = 1;
     address public imnotArtPayoutAddress;
-    address public marketplaceAddress;
     string private _contractUri;
     bool public useRoyaltyContracts;
 
@@ -58,7 +57,6 @@ contract ImnotArtExhibitions is Ownable, ERC721Enumerable, RoyaltiesV2 {
     // Events
     // ---
     event PermanentURI(string _value, uint256 indexed _id); // OpenSea Freezing Metadata
-    event Debug(string _value, address royaltyAddress);
 
     // ---
     // Security
@@ -92,7 +90,7 @@ contract ImnotArtExhibitions is Ownable, ERC721Enumerable, RoyaltiesV2 {
     // ---
     // Constructor
     // ---
-    constructor() ERC721("imnotArt Exhibitions", "IMNOTART") {
+    constructor() ERC721("The New Digital: Born in Chicago", "IMNOTARTEXHIBITION1") {
         _isAdmin[msg.sender] = true;
         useRoyaltyContracts = false;
         // imnotArtPayoutAddress = 0xaB5B4e5845B124785027d9944baaFb7f064B3F72; // @TODO(iolson): Proper Production Payout Address
@@ -115,7 +113,7 @@ contract ImnotArtExhibitions is Ownable, ERC721Enumerable, RoyaltiesV2 {
     // ---
     // Minting
     // ---
-    function mintToken(address artistAddress, string memory metadataUri, bool transferToMarketplaceContract) public onlyAdmin returns (uint256 tokenId) {
+    function mintToken(address artistAddress, string memory metadataUri) public onlyAdmin returns (uint256 tokenId) {
         tokenId = nextTokenId;
         nextTokenId = nextTokenId.add(1);
 
@@ -130,13 +128,9 @@ contract ImnotArtExhibitions is Ownable, ERC721Enumerable, RoyaltiesV2 {
             artistSecondarySaleBps: artistSecondarySaleBps
         });
         tokenBpsByTokenId[tokenId] = tokenBps;
-
-        if (transferToMarketplaceContract) {
-            _transfer(artistAddress, marketplaceAddress, tokenId);
-        }
     }
 
-    function artistMintToken(string memory metadataUri, bool transferToMarketplaceContract) public onlyArtist returns (uint256 tokenId) {
+    function artistMintToken(string memory metadataUri) public onlyArtist returns (uint256 tokenId) {
         tokenId = nextTokenId;
         nextTokenId = nextTokenId.add(1);
 
@@ -151,10 +145,6 @@ contract ImnotArtExhibitions is Ownable, ERC721Enumerable, RoyaltiesV2 {
             artistSecondarySaleBps: artistSecondarySaleBps
         });
         tokenBpsByTokenId[tokenId] = tokenBps;
-
-        if (transferToMarketplaceContract) {
-            _transfer(msg.sender, marketplaceAddress, tokenId);
-        }
     }
 
     // ---
@@ -171,10 +161,6 @@ contract ImnotArtExhibitions is Ownable, ERC721Enumerable, RoyaltiesV2 {
     // ---
     function updateImnotArtPayoutAddress(address newPayoutAddress) public onlyAdmin {
         imnotArtPayoutAddress = newPayoutAddress;
-    }
-
-    function updateMarketplaceAddress(address newMarketplaceAddress) public onlyAdmin {
-        marketplaceAddress = newMarketplaceAddress;
     }
 
     function updateContractUri(string memory newContractUri) public onlyAdmin {
