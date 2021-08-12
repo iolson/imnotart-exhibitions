@@ -33,6 +33,7 @@ Sinclair
 
 // Smart Contract
 imnotFuzzyHat <Ian Olson>
+
 */
 
 pragma solidity ^0.8.4;
@@ -298,6 +299,7 @@ contract imnotArtExhibition1 is Ownable, ERC721Enumerable, RoyaltiesV2 {
     }
 
     /*
+    
     imnotArt POV on Gallery Exhibition Contracts
     
     This is the first contract ever launched by the imnotArt team and we've learned a lot
@@ -311,5 +313,8 @@ contract imnotArtExhibition1 is Ownable, ERC721Enumerable, RoyaltiesV2 {
     smart contracts. That said, this will be imnotArt's first - and last - exhibition contract 
     as we adopt a new model that we feel better empowers artists. Our POV may continue to evolve 
     but will always align with the best interest of artists.
+
+    - imnotMatt
+
     */
 }
