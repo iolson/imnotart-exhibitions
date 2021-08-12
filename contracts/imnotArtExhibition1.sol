@@ -1,17 +1,41 @@
 // SPDX-License-Identifier: MIT
 
 /*
-  _                       _                 _     ______      _     _ _     _ _   _                 
- (_)                     | |     /\        | |   |  ____|    | |   (_) |   (_) | (_)                
-  _ _ __ ___  _ __   ___ | |_   /  \   _ __| |_  | |__  __  _| |__  _| |__  _| |_ _  ___  _ __  ___ 
- | | '_ ` _ \| '_ \ / _ \| __| / /\ \ | '__| __| |  __| \ \/ / '_ \| | '_ \| | __| |/ _ \| '_ \/ __|
- | | | | | | | | | | (_) | |_ / ____ \| |  | |_  | |____ >  <| | | | | |_) | | |_| | (_) | | | \__ \
- |_|_| |_| |_|_| |_|\___/ \__/_/    \_\_|   \__| |______/_/\_\_| |_|_|_.__/|_|\__|_|\___/|_| |_|___/
-                                                                                                    
- Written by Ian Olson
+ ________         _  __             ___  _      _ __       ___ 
+/_  __/ /  ___   / |/ /__ _    __  / _ \(_)__ _(_) /____ _/ (_)
+ / / / _ \/ -_) /    / -_) |/|/ / / // / / _ `/ / __/ _ `/ /   
+/_/ /_//_/\__/ /_/|_/\__/|__,__/ /____/_/\_, /_/\__/\_,_/_(_)  
+   ___                  _        _______/___/                  
+  / _ )___  _______    (_)__    / ___/ /  (_)______ ____ ____  
+ / _  / _ \/ __/ _ \  / / _ \  / /__/ _ \/ / __/ _ `/ _ `/ _ \ 
+/____/\___/_/ /_//_/ /_/_//_/  \___/_//_/_/\__/\_,_/\_, /\___/ 
+                                                   /___/       
+
+// imnotArt Exhibition 1
+
+As an emerging hub for digital art and NFTs, “The New Digital: Born in Chicago” showcases 
+the many ways Chicago inspires creativity — from the city’s architecture, to the culture 
+of the Midwest, and its vibrant neighborhoods.
+
+This genesis exhibition from imnotArt Chicago features seven artists who were born or 
+raised in Chicago, each with work reflecting a unique aspect of this great city.  
+Together, starting with this exhibition, we are building something special right here in 
+the 312. Welcome to The New Digital.
+
+// Featured Artists
+Chuck Anderson
+Sophie Sturdevant
+Joey the Photographer
+Willea Zwey
+ProbCause
+Sean Williams
+Sinclair
+
+// Smart Contract
+imnotFuzzyHat <Ian Olson>
 */
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
@@ -20,7 +44,7 @@ import "./rarible/library/LibPart.sol";
 import "./rarible/library/LibRoyaltiesV2.sol";
 import "./rarible/RoyaltiesV2.sol";
 
-contract ImnotArtExhibitions is Ownable, ERC721Enumerable, RoyaltiesV2 {
+contract imnotArtExhibition1 is Ownable, ERC721Enumerable, RoyaltiesV2 {
     using SafeMath for uint256;
 
     // ---
@@ -93,8 +117,11 @@ contract ImnotArtExhibitions is Ownable, ERC721Enumerable, RoyaltiesV2 {
     constructor() ERC721("The New Digital: Born in Chicago", "IMNOTARTEXHIBITION1") {
         _isAdmin[msg.sender] = true;
         useRoyaltyContracts = false;
-        // imnotArtPayoutAddress = 0xaB5B4e5845B124785027d9944baaFb7f064B3F72; // @TODO(iolson): Proper Production Payout Address
-        // _contractUri = "ipfs://bafkreigrkm4ta353qumma6g6fpfg7mbnhyuyckdy2hi6udc5ov5asjcsiu"; // @TODO(iolson): Proper Production Contract URI
+
+        // imnotArt Mainnet Gnosis Safe
+        _isAdmin[address(0x12b66baFc99D351f7e24874B3e52B1889641D3f3)] = true;
+        imnotArtPayoutAddress = address(0x12b66baFc99D351f7e24874B3e52B1889641D3f3);
+        _contractUri = "ipfs://QmWybmS4kK9cNdWBqGzysgikzpss9KRfcUgpuMAL9SQXaH";
     }
 
     // ---
@@ -269,4 +296,20 @@ contract ImnotArtExhibitions is Ownable, ERC721Enumerable, RoyaltiesV2 {
 
         return (payoutAddress, royaltyAmount);
     }
+
+    /*
+    imnotArt POV on Gallery Exhibition Contracts
+    
+    This is the first contract ever launched by the imnotArt team and we've learned a lot
+    in the process. Our idea behind launching a standalone contract for 
+    'The New Digital: Born in Chicago' was rooted in a desire to establish provenance to 
+    the exhibition. We built the contract to allow our artists to mint their work themselves, 
+    thus establishing provenance with both the artist and the exhibition. Overall we thought 
+    this was the best approach. As we were finalizing this contract we started to observe a 
+    new movement of artists creating their own smart contracts.  We firmly believe this is 
+    the future. In our opinion, artists are best served through minting works from their own 
+    smart contracts. That said, this will be imnotArt's first - and last - exhibition contract 
+    as we adopt a new model that we feel better empowers artists. Our POV may continue to evolve 
+    but will always align with the best interest of artists.
+    */
 }

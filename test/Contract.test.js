@@ -1,7 +1,7 @@
 const { assert } = require('chai')
 const truffleAssert = require('truffle-assertions')
 
-const Contract = artifacts.require('./ImnotArtExhibitions.sol')
+const Contract = artifacts.require('./imnotArtExhibition1.sol')
 
 require('chai')
     .use(require('chai-as-promised'))
@@ -63,7 +63,7 @@ contract('Contract', (accounts) => {
 
         it('can update contract uri', async () => {
             let contractUri = await contract.contractURI()
-            assert.equal(contractUri, '')
+            assert.equal(contractUri, 'ipfs://QmWybmS4kK9cNdWBqGzysgikzpss9KRfcUgpuMAL9SQXaH')
 
             await contract.updateContractUri('contract-uri')
 
@@ -73,7 +73,7 @@ contract('Contract', (accounts) => {
 
         it('can update imnotArt payout address', async () => {
             let contractImnotArtPayoutAddress = await contract.imnotArtPayoutAddress()
-            assert.equal(contractImnotArtPayoutAddress, 0x0)
+            assert.equal(contractImnotArtPayoutAddress, 0x12b66baFc99D351f7e24874B3e52B1889641D3f3)
 
             await contract.updateImnotArtPayoutAddress(imnotArtPayoutAddress)
 
