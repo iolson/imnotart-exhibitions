@@ -27,11 +27,11 @@ module.exports = {
         mainnet: {
             provider: function () {
                 return new HDWalletProvider(mnemonic,
-                    "https://mainnet.infura.io/v3/" + infuraKey, 3)
+                    "https://mainnet.infura.io/v3/" + infuraKey, 4)
             },
             network_id: 1,
             gas: 4500000,
-            gasPrice: web3.utils.toWei('47', 'gwei'),
+            gasPrice: web3.utils.toWei('28', 'gwei'),
             timeoutBlocks: 200
         }
     },
