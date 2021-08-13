@@ -123,6 +123,15 @@ contract imnotArtExhibition1 is Ownable, ERC721Enumerable, RoyaltiesV2 {
         _isAdmin[address(0x12b66baFc99D351f7e24874B3e52B1889641D3f3)] = true;
         imnotArtPayoutAddress = address(0x12b66baFc99D351f7e24874B3e52B1889641D3f3);
         _contractUri = "ipfs://QmWybmS4kK9cNdWBqGzysgikzpss9KRfcUgpuMAL9SQXaH";
+
+        // Artists
+        _isArtist[address(0x7fd29e547dC2d2Ec3773457295a98893A0Db2e05)] = true; // Chuck Anderson
+        _isArtist[address(0x86d0b90816F8f8290129dD9E62C7A75117547A98)] = true; // Sophie Sturdevant
+        _isArtist[address(0x28C0719a45F9E7a35c4dCD845D1A269d0079D781)] = true; // Joey the Photographer
+        _isArtist[address(0xB802162900a4e2d1b2472B14895D56A73aE647E8)] = true; // Willea Zwey
+        _isArtist[address(0x7049871039097E61b1Ae827e77aBb1C9a0B14061)] = true; // ProbCause
+        _isArtist[address(0x0C88aF8b65C68D1d3cb9eC719E9Ce2A76642E135)] = true; // Sean Williams
+        _isArtist[address(0x4F9B8A31c0986fA44cD386b1610F54a56eC8dc70)] = true; // Sinclair
     }
 
     // ---
@@ -302,16 +311,21 @@ contract imnotArtExhibition1 is Ownable, ERC721Enumerable, RoyaltiesV2 {
     
     imnotArt POV on Gallery Exhibition Contracts
     
-    This is the first contract ever launched by the imnotArt team and we've learned a lot
-    in the process. Our idea behind launching a standalone contract for 
-    'The New Digital: Born in Chicago' was rooted in a desire to establish provenance to 
-    the exhibition. We built the contract to allow our artists to mint their work themselves, 
-    thus establishing provenance with both the artist and the exhibition. Overall we thought 
-    this was the best approach. As we were finalizing this contract we started to observe a 
-    new movement of artists creating their own smart contracts.  We firmly believe this is 
-    the future. In our opinion, artists are best served through minting works from their own 
-    smart contracts. That said, this will be imnotArt's first - and last - exhibition contract 
-    as we adopt a new model that we feel better empowers artists. Our POV may continue to evolve 
+    The idea to build a smart contract specific for 'The New Digital: Born in Chicago' was 
+    rooted in a desire to establish provenance within the exhibition. Through the 
+    'imnotArtExhibition1' contract we allow our participating artists to mint their work 
+    themselves, thus creating a digital signature with both the artist and exhibition.
+    
+    As we were finalizing this contract we started to observe a new movement of artists 
+    creating their own smart contracts.
+    
+    We believe this is the future.
+    
+    In our opinion, artists are best served through minting works from their own smart contracts.  
+    As a gallery we believe this is the correct model and will do our part in encouraging and 
+    onboarding artists to create their own smart contracts. 
+    
+    This will be imnotArt's first - and last - exhibition contract.  Our POV may continue to evolve 
     but will always align with the best interest of artists.
 
     - imnotMatt
